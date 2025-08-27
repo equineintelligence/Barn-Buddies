@@ -48,12 +48,24 @@
         }
 
         .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
             font-size: 2rem;
             font-weight: bold;
             background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        .logo img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            background: linear-gradient(white, white) padding-box, linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c) border-box;
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
         }
 
         .nav-links {
@@ -421,7 +433,10 @@
 
     <header>
         <nav class="container">
-            <div class="logo">🐴 Barn Buddies</div>
+            <div class="logo">
+                <img src="images/barn-buddies-logo.png" alt="Barn Buddies Logo">
+                🐴 Barn Buddies
+            </div>
             <ul class="nav-links" id="navLinks">
                 <li><a href="#" class="nav-link active" data-page="home">Home</a></li>
                 <li><a href="#" class="nav-link" data-page="faq">FAQ</a></li>
@@ -580,17 +595,8 @@
                 <p>Celebrating our beautiful custom crochet horses and their real-life inspirations</p>
             </div>
 
-            <div class="hall-controls">
-                <h3>Add a New Horse to Our Hall of Fame</h3>
-                <div class="upload-form">
-                    <input type="text" id="horseName" placeholder="Horse's Name" style="width: 200px;">
-                    <input type="file" id="horseImage" accept="image/*">
-                    <button class="cta-button" onclick="addHorse()" style="padding: 0.8rem 1.5rem; font-size: 1rem;">Add Horse</button>
-                </div>
-            </div>
-
             <div class="horses-grid" id="horsesGrid">
-                <!-- Sample horses will be added here -->
+                <!-- Horses will be loaded from horses.js -->
             </div>
         </div>
     </main>
@@ -647,65 +653,83 @@
                 });
             });
 
-            // Initialize with some sample horses
-            addSampleHorses();
+            // Initialize with loading horses from external file
+            loadHorses();
         });
 
-        // Hall of Fame functionality
+        // Hall of Fame functionality - loads horses from external file
         let horses = [];
 
-        function addHorse() {
-            const nameInput = document.getElementById('horseName');
-            const imageInput = document.getElementById('horseImage');
-            
-            const name = nameInput.value.trim();
-            const file = imageInput.files[0];
-            
-            if (!name || !file) {
-                alert('Please provide both a name and an image for the horse.');
-                return;
+        // Load horses from horses.js file
+        async function loadHorses() {
+            try {
+                // This will load the horses array from horses.js
+                const response = await fetch('horses.js');
+                const horsesData = await response.text();
+                
+                // Extract horses array from the file
+                const horsesMatch = horsesData.match(/const horses = (\[[\s\S]*?\]);/);
+                if (horsesMatch) {
+                    horses = JSON.parse(horsesMatch[1]);
+                }
+            } catch (error) {
+                console.log('Loading default horses data');
+                // Fallback to default horses if file doesn't exist
+                horses = getDefaultHorses();
             }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const horse = {
-                    name: name,
-                    image: e.target.result,
-                    id: Date.now()
-                };
-                
-                horses.push(horse);
-                renderHorses();
-                
-                // Clear inputs
-                nameInput.value = '';
-                imageInput.value = '';
-            };
-            
-            reader.readAsDataURL(file);
+            renderHorses();
+        }
+
+        function getDefaultHorses() {
+            return [
+                { 
+                    name: "Buttercup", 
+                    image: "images/horses/buttercup.jpg", 
+                    id: 1,
+                    description: "A golden palomino with the sweetest personality" 
+                },
+                { 
+                    name: "Thunder", 
+                    image: "images/horses/thunder.jpg", 
+                    id: 2,
+                    description: "A majestic dark bay with white markings" 
+                },
+                { 
+                    name: "Starlight", 
+                    image: "images/horses/starlight.jpg", 
+                    id: 3,
+                    description: "A beautiful gray mare with a flowing mane" 
+                },
+                { 
+                    name: "Moonbeam", 
+                    image: "images/horses/moonbeam.jpg", 
+                    id: 4,
+                    description: "A gentle pinto with striking markings" 
+                }
+            ];
         }
 
         function renderHorses() {
             const grid = document.getElementById('horsesGrid');
+            if (horses.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; background: rgba(255,255,255,0.7); border-radius: 20px; backdrop-filter: blur(10px);">
+                        <h3>No horses in the Hall of Fame yet!</h3>
+                        <p>Check back soon to see our beautiful custom crochet horses!</p>
+                    </div>
+                `;
+                return;
+            }
+
             grid.innerHTML = horses.map(horse => `
                 <div class="horse-card">
-                    <img src="${horse.image}" alt="${horse.name}">
-                    <h3>${horse.name}</h3>
+                    <img src="${horse.image}" alt="${horse.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'300\\' height=\\'200\\' viewBox=\\'0 0 300 200\\'%3E%3Crect width=\\'300\\' height=\\'200\\' fill=\\'%23f7fafc\\'/%3E%3Ctext x=\\'150\\' y=\\'90\\' font-family=\\'Arial\\' font-size=\\'16\\' fill=\\'%23718096\\' text-anchor=\\'middle\\' dominant-baseline=\\'middle\\'%3E${horse.name}%3C/text%3E%3Ctext x=\\'150\\' y=\\'110\\' font-family=\\'Arial\\' font-size=\\'12\\' fill=\\'%23718096\\' text-anchor=\\'middle\\' dominant-baseline=\\'middle\\'%3ECrochet Horse%3C/text%3E%3C/svg%3E'">
+                    <div style="padding: 1rem;">
+                        <h3>${horse.name}</h3>
+                        ${horse.description ? `<p style="font-size: 0.9rem; color: #718096; margin-top: 0.5rem;">${horse.description}</p>` : ''}
+                    </div>
                 </div>
             `).join('');
-        }
-
-        function addSampleHorses() {
-            // Add some sample horses with placeholder images
-            const sampleHorses = [
-                { name: "Buttercup", image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f7fafc'/%3E%3Ctext x='150' y='100' font-family='Arial' font-size='16' fill='%23718096' text-anchor='middle' dominant-baseline='middle'%3EButtercup%0ACrochet Horse%3C/text%3E%3C/svg%3E", id: 1 },
-                { name: "Thunder", image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23edf2f7'/%3E%3Ctext x='150' y='100' font-family='Arial' font-size='16' fill='%23718096' text-anchor='middle' dominant-baseline='middle'%3EThunder%0ACrochet Horse%3C/text%3E%3C/svg%3E", id: 2 },
-                { name: "Starlight", image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23fed7d7'/%3E%3Ctext x='150' y='100' font-family='Arial' font-size='16' fill='%23718096' text-anchor='middle' dominant-baseline='middle'%3EStarlight%0ACrochet Horse%3C/text%3E%3C/svg%3E", id: 3 },
-                { name: "Moonbeam", image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23bee3f8'/%3E%3Ctext x='150' y='100' font-family='Arial' font-size='16' fill='%23718096' text-anchor='middle' dominant-baseline='middle'%3EMoonbeam%0ACrochet Horse%3C/text%3E%3C/svg%3E", id: 4 }
-            ];
-            
-            horses = sampleHorses;
-            renderHorses();
         }
 
         // Add some floating animation elements
