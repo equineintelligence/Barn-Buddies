@@ -419,6 +419,119 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Cart Styles */
+        .cart-icon {
+            position: relative;
+            cursor: pointer;
+            font-size: 1.5rem;
+            padding: 10px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--pastel-pink), var(--pastel-purple));
+            transition: all 0.3s ease;
+        }
+
+        .cart-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .cart-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease;
+            z-index: 1001;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .cart-sidebar.open {
+            right: 0;
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--pastel-purple);
+        }
+
+        .cart-item {
+            background: linear-gradient(135deg, var(--pastel-pink), var(--pastel-blue));
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .cart-item h4 {
+            margin-bottom: 5px;
+            color: var(--text-dark);
+        }
+
+        .cart-item-price {
+            font-weight: bold;
+            color: var(--text-dark);
+            margin-top: 10px;
+        }
+
+        .cart-total {
+            background: linear-gradient(135deg, var(--pastel-purple), var(--pastel-pink));
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .cart-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .login-prompt {
+            background: linear-gradient(135deg, var(--pastel-yellow), var(--pastel-orange));
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .remove-item {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .remove-item:hover {
+            background: #ff3742;
+        }
     </style>
 </head>
 <body>
@@ -439,6 +552,10 @@
             </nav>
 
             <div class="auth-buttons">
+                <div class="cart-icon" onclick="toggleCart()">
+                    🛒
+                    <span class="cart-count hidden" id="cartCount">0</span>
+                </div>
                 <button class="btn btn-secondary" id="loginBtn">Login</button>
                 <button class="btn btn-primary" id="signupBtn">Sign Up</button>
                 <button class="btn btn-secondary hidden" id="logoutBtn">Logout</button>
@@ -553,9 +670,14 @@
                     <textarea id="specialRequests" rows="3" placeholder="Any special requests or additional details?"></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 15px;">
-                    Submit Order Request
-                </button>
+                <div class="cart-actions">
+                    <button type="button" class="btn btn-primary" onclick="addToCart()" style="width: 48%;">
+                        Add to Cart
+                    </button>
+                    <button type="submit" class="btn btn-secondary" style="width: 48%;">
+                        Buy Now
+                    </button>
+                </div>
             </form>
         </div>
 
@@ -588,6 +710,23 @@
         </div>
     </main>
 
+    <!-- Cart Sidebar -->
+    <div id="cartSidebar" class="cart-sidebar">
+        <div class="cart-header">
+            <h3>Your Cart</h3>
+            <span onclick="toggleCart()" style="cursor: pointer; font-size: 1.5rem;">&times;</span>
+        </div>
+        
+        <div id="cartItems"></div>
+        
+        <div id="cartSummary"></div>
+        
+        <div id="cartCheckout"></div>
+    </div>
+
+    <!-- Cart Overlay -->
+    <div id="cartOverlay" class="modal" style="background: rgba(0, 0, 0, 0.5);" onclick="toggleCart()"></div>
+
     <!-- Auth Modal -->
     <div id="authModal" class="modal">
         <div class="modal-content">
@@ -616,15 +755,14 @@
 
     <script>
         // Firebase configuration (you'll need to replace with your actual config)
-         const firebaseConfig = {
-    apiKey: "AIzaSyClMRMSMVCD0U2B3mS_SimioM46h-n9xmg",
-    authDomain: "barn-buddies.firebaseapp.com",
-    projectId: "barn-buddies",
-    storageBucket: "barn-buddies.firebasestorage.app",
-    messagingSenderId: "338583232814",
-    appId: "1:338583232814:web:2477b8f67344170069dabf",
-    measurementId: "G-7BL4GRBK51"
-  };
+        const firebaseConfig = {
+            apiKey: "your-api-key-here",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -634,6 +772,170 @@
         // Global variables
         let currentUser = null;
         let currentPage = 'home';
+        let cart = [];
+
+        // Cart functions
+        function updateCartUI() {
+            const cartCount = document.getElementById('cartCount');
+            const cartItems = document.getElementById('cartItems');
+            const cartSummary = document.getElementById('cartSummary');
+            const cartCheckout = document.getElementById('cartCheckout');
+            
+            if (cart.length === 0) {
+                cartCount.classList.add('hidden');
+                cartItems.innerHTML = '<p style="text-align: center; color: var(--text-light);">Your cart is empty</p>';
+                cartSummary.innerHTML = '';
+                cartCheckout.innerHTML = '';
+                return;
+            }
+
+            cartCount.classList.remove('hidden');
+            cartCount.textContent = cart.length;
+            
+            // Display cart items
+            cartItems.innerHTML = cart.map((item, index) => `
+                <div class="cart-item">
+                    <h4>Custom Horse Toy: ${item.horseName || 'Unnamed Horse'}</h4>
+                    <p><strong>Customer:</strong> ${item.customerName}</p>
+                    <div style="margin: 10px 0;">
+                        ${item.addons.keyring ? '<span style="background: rgba(255,255,255,0.5); padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block; font-size: 0.8rem;">🔑 Keyring</span>' : ''}
+                        ${item.addons.halter ? '<span style="background: rgba(255,255,255,0.5); padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block; font-size: 0.8rem;">🐴 Halter</span>' : ''}
+                        ${item.addons.nameTag ? '<span style="background: rgba(255,255,255,0.5); padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block; font-size: 0.8rem;">🏷️ Name Tag</span>' : ''}
+                        ${item.addons.shipping ? '<span style="background: rgba(255,255,255,0.5); padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block; font-size: 0.8rem;">📦 Shipping</span>' : ''}
+                    </div>
+                    <div class="cart-item-price">Extras: R${item.totalExtras}</div>
+                    <button class="remove-item" onclick="removeFromCart(${index})">Remove</button>
+                </div>
+            `).join('');
+
+            // Display cart summary
+            const totalExtras = cart.reduce((sum, item) => sum + item.totalExtras, 0);
+            cartSummary.innerHTML = `
+                <div class="cart-total">
+                    <h3>Total Extras: R${totalExtras}</h3>
+                    <p><small>Base toy prices will be quoted individually</small></p>
+                </div>
+            `;
+
+            // Display checkout section
+            if (currentUser) {
+                cartCheckout.innerHTML = `
+                    <button class="btn btn-primary" onclick="checkoutCart()" style="width: 100%; margin-bottom: 10px;">
+                        Place Order
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearCart()" style="width: 100%;">
+                        Clear Cart
+                    </button>
+                `;
+            } else {
+                cartCheckout.innerHTML = `
+                    <div class="login-prompt">
+                        <h4>Please log in to place your order</h4>
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-primary" onclick="showLoginModal(); toggleCart();" style="margin-right: 10px;">
+                                Login
+                            </button>
+                            <button class="btn btn-secondary" onclick="showSignupModal(); toggleCart();">
+                                Sign Up
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleCart() {
+            const sidebar = document.getElementById('cartSidebar');
+            const overlay = document.getElementById('cartOverlay');
+            
+            if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                overlay.style.display = 'none';
+            } else {
+                sidebar.classList.add('open');
+                overlay.style.display = 'block';
+                updateCartUI();
+            }
+        }
+
+        function addToCart() {
+            const orderData = {
+                customerName: document.getElementById('customerName').value,
+                customerEmail: document.getElementById('customerEmail').value,
+                horseName: document.getElementById('horseName').value,
+                horseDescription: document.getElementById('horseDescription').value,
+                addons: {
+                    keyring: document.getElementById('keyring').checked,
+                    halter: document.getElementById('halter').checked,
+                    nameTag: document.getElementById('nameTag').checked,
+                    shipping: document.getElementById('shipping').checked
+                },
+                specialRequests: document.getElementById('specialRequests').value,
+                totalExtras: parseInt(document.getElementById('totalPrice').textContent)
+            };
+
+            // Validate required fields
+            if (!orderData.customerName || !orderData.customerEmail) {
+                alert('Please fill in your name and email address.');
+                return;
+            }
+
+            cart.push(orderData);
+            updateCartUI();
+            
+            // Clear form
+            document.getElementById('orderForm').reset();
+            updatePrice();
+            
+            alert('Item added to cart! Click the cart icon to review your order.');
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+        }
+
+        function clearCart() {
+            if (confirm('Are you sure you want to clear your cart?')) {
+                cart = [];
+                updateCartUI();
+            }
+        }
+
+        async function checkoutCart() {
+            if (!currentUser) {
+                alert('Please log in to place your order.');
+                return;
+            }
+
+            if (cart.length === 0) {
+                alert('Your cart is empty.');
+                return;
+            }
+
+            try {
+                // Submit all cart items as separate orders
+                const orderPromises = cart.map(orderData => 
+                    db.collection('orders').add({
+                        ...orderData,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        status: 'pending',
+                        userId: currentUser.uid
+                    })
+                );
+
+                await Promise.all(orderPromises);
+                
+                alert(`Successfully placed ${cart.length} order(s)! We'll contact you within 24 hours with quotes and timelines.`);
+                cart = [];
+                updateCartUI();
+                toggleCart();
+                
+            } catch (error) {
+                console.error('Error placing orders:', error);
+                alert('Error placing orders. Please try again.');
+            }
+        }
 
         // Page navigation
         function showPage(pageName) {
@@ -765,9 +1067,15 @@
                 }
             });
 
-            // Order form submission
+            // Order form submission (Buy Now button)
             document.getElementById('orderForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                
+                if (!currentUser) {
+                    alert('Please log in to place an order.');
+                    showLoginModal();
+                    return;
+                }
                 
                 const orderData = {
                     customerName: document.getElementById('customerName').value,
@@ -795,8 +1103,9 @@
                 }
             };
 
-            // Initialize price calculation
+            // Initialize price calculation and cart
             updatePrice();
+            updateCartUI();
         });
     </script>
 </body>
