@@ -434,7 +434,8 @@
     <header>
         <nav class="container">
             <div class="logo">
-                <img src="images/barn-buddies-logo.png" alt="Barn Buddies Logo">
+                <!-- Logo will show if image exists, otherwise just text -->
+                <img src="images/barn-buddies-logo.png" alt="Barn Buddies Logo" style="display: none;" onload="this.style.display='block';">
                 🐴 Barn Buddies
             </div>
             <ul class="nav-links" id="navLinks">
@@ -657,61 +658,41 @@
             loadHorses();
         });
 
-        // Hall of Fame functionality - loads horses from external file
-        let horses = [];
-
-        // Load horses from horses.js file
-        async function loadHorses() {
-            try {
-                // This will load the horses array from horses.js
-                const response = await fetch('horses.js');
-                const horsesData = await response.text();
-                
-                // Extract horses array from the file
-                const horsesMatch = horsesData.match(/const horses = (\[[\s\S]*?\]);/);
-                if (horsesMatch) {
-                    horses = JSON.parse(horsesMatch[1]);
-                }
-            } catch (error) {
-                console.log('Loading default horses data');
-                // Fallback to default horses if file doesn't exist
-                horses = getDefaultHorses();
+        // Hall of Fame functionality - horses data embedded directly
+        const horsesData = [
+            {
+                id: 1,
+                name: "Buttercup",
+                image: "images/horses/buttercup.jpg",
+                description: "A golden palomino with the sweetest personality"
+            },
+            {
+                id: 2,
+                name: "Thunder",
+                image: "images/horses/thunder.jpg",
+                description: "A majestic dark bay with white markings"
+            },
+            {
+                id: 3,
+                name: "Starlight", 
+                image: "images/horses/starlight.jpg",
+                description: "A beautiful gray mare with a flowing mane"
+            },
+            {
+                id: 4,
+                name: "Moonbeam",
+                image: "images/horses/moonbeam.jpg", 
+                description: "A gentle pinto with striking markings"
             }
-            renderHorses();
-        }
+        ];
 
-        function getDefaultHorses() {
-            return [
-                { 
-                    name: "Buttercup", 
-                    image: "images/horses/buttercup.jpg", 
-                    id: 1,
-                    description: "A golden palomino with the sweetest personality" 
-                },
-                { 
-                    name: "Thunder", 
-                    image: "images/horses/thunder.jpg", 
-                    id: 2,
-                    description: "A majestic dark bay with white markings" 
-                },
-                { 
-                    name: "Starlight", 
-                    image: "images/horses/starlight.jpg", 
-                    id: 3,
-                    description: "A beautiful gray mare with a flowing mane" 
-                },
-                { 
-                    name: "Moonbeam", 
-                    image: "images/horses/moonbeam.jpg", 
-                    id: 4,
-                    description: "A gentle pinto with striking markings" 
-                }
-            ];
+        function loadHorses() {
+            renderHorses();
         }
 
         function renderHorses() {
             const grid = document.getElementById('horsesGrid');
-            if (horses.length === 0) {
+            if (horsesData.length === 0) {
                 grid.innerHTML = `
                     <div style="grid-column: 1/-1; text-align: center; padding: 3rem; background: rgba(255,255,255,0.7); border-radius: 20px; backdrop-filter: blur(10px);">
                         <h3>No horses in the Hall of Fame yet!</h3>
@@ -721,7 +702,7 @@
                 return;
             }
 
-            grid.innerHTML = horses.map(horse => `
+            grid.innerHTML = horsesData.map(horse => `
                 <div class="horse-card">
                     <img src="${horse.image}" alt="${horse.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'300\\' height=\\'200\\' viewBox=\\'0 0 300 200\\'%3E%3Crect width=\\'300\\' height=\\'200\\' fill=\\'%23f7fafc\\'/%3E%3Ctext x=\\'150\\' y=\\'90\\' font-family=\\'Arial\\' font-size=\\'16\\' fill=\\'%23718096\\' text-anchor=\\'middle\\' dominant-baseline=\\'middle\\'%3E${horse.name}%3C/text%3E%3Ctext x=\\'150\\' y=\\'110\\' font-family=\\'Arial\\' font-size=\\'12\\' fill=\\'%23718096\\' text-anchor=\\'middle\\' dominant-baseline=\\'middle\\'%3ECrochet Horse%3C/text%3E%3C/svg%3E'">
                     <div style="padding: 1rem;">
