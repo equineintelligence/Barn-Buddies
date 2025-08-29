@@ -658,7 +658,7 @@
                     if (!isActive) {
                         item.classList.add('active');
                     }
-                    });
+                });
             });
 
             // Initialize logo loading
@@ -668,31 +668,17 @@
             loadHorses();
         });
 
-        // Logo loading with correct file path
+        // Logo loading with correct file paths
         function loadLogo() {
             const logoImg = document.getElementById('logoImg');
-            const possiblePaths = [
-                './logo',
-                'logo'
-            ];
-
-            function tryNextPath(index = 0) {
-                if (index >= possiblePaths.length) {
-                    console.log('Logo not found in any of the expected paths');
-                    return;
-                }
-
-                logoImg.src = possiblePaths[index];
-                logoImg.onload = function() {
-                    this.style.display = 'block';
-                    console.log('Logo loaded from:', possiblePaths[index]);
-                };
-                logoImg.onerror = function() {
-                    tryNextPath(index + 1);
-                };
-            }
-
-            tryNextPath();
+            logoImg.src = 'logo.png';
+            logoImg.onload = function() {
+                this.style.display = 'block';
+                console.log('Logo loaded successfully');
+            };
+            logoImg.onerror = function() {
+                console.log('Failed to load logo.png');
+            };
         }
 
         // Hall of Fame functionality with correct file paths
@@ -700,9 +686,8 @@
             {
                 id: 1,
                 name: "Levi",
-                image: "levi", // Correct filename without extension
                 description: "A bay OTTB with the sweetest personality",
-                possiblePaths: ["./levi", "levi"]
+                image: "levi.jpg"
             }
         ];
 
@@ -716,31 +701,20 @@
             img.style.width = '100%';
             img.style.height = '200px';
             img.style.objectFit = 'cover';
+            img.src = horse.image;
 
-            // Try multiple paths for each image
-            function tryImagePath(pathIndex = 0) {
-                if (pathIndex >= horse.possiblePaths.length) {
-                    // If no image found, create placeholder
-                    const placeholder = document.createElement('div');
-                    placeholder.className = 'image-placeholder';
-                    placeholder.innerHTML = `
-                        <div class="icon">🐴</div>
-                        <div>Image for ${horse.name}</div>
-                        <div>Coming Soon!</div>
-                    `;
-                    return placeholder;
-                }
+            img.onerror = function() {
+                // If image fails to load, create placeholder
+                const placeholder = document.createElement('div');
+                placeholder.className = 'image-placeholder';
+                placeholder.innerHTML = `
+                    <div class="icon">🐴</div>
+                    <div>Image for ${horse.name}</div>
+                    <div>Coming Soon!</div>
+                `;
+                this.parentNode.replaceChild(placeholder, this);
+            };
 
-                img.src = horse.possiblePaths[pathIndex];
-                img.onload = function() {
-                    console.log(`${horse.name} image loaded from:`, horse.possiblePaths[pathIndex]);
-                };
-                img.onerror = function() {
-                    tryImagePath(pathIndex + 1);
-                };
-            }
-
-            tryImagePath();
             return img;
         }
 
